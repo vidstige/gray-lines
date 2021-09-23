@@ -1,0 +1,4 @@
+[MASTER]
+
+[MESSAGES CONTROL]
+disable=missing-function-docstring,missing-module-docstring
