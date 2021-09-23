@@ -1,4 +1,11 @@
 [MASTER]
+good-names=x,y,z,i,j,n,r,n0,n1
+
+[TYPECHECK]
+ignored-modules=cairo
+
+# SQLAlchemy issues due to dynamic behavior
+#generated-members=db.session.add|db.session.commit|db.session.merge|db.session.query|db.session.flush
 
 [MESSAGES CONTROL]
 disable=missing-function-docstring,missing-module-docstring
