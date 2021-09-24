@@ -57,8 +57,8 @@ def size(img: np.ndarray) -> np.ndarray:
 
 
 def main():
-    #target = load_target('skull.jpeg')
-    target = load_target('woman.jpeg')
+    target = load_target('input/skull.jpeg')
+    #target = load_target('input/woman.jpeg')
 
     radius = np.max(size(target))
     alpha = np.linspace(0, TAU, NODES, endpoint=False)
