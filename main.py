@@ -73,8 +73,13 @@ def main():
 
     combinations = list(itertools.combinations(nodes, 2))
 
+    best = float('inf')
     for _ in tqdm(range(500)):
-        index = np.argmin([cost(node_pair, accumulator, target) for node_pair in combinations])
+        costs = [cost(node_pair, accumulator, target) for node_pair in combinations]
+        index = np.argmin(costs)
+        if costs[index] >= best:
+            print('plateau')
+            break
 
         n0, n1 = combinations[index]
         ctx.move_to(*n0)
