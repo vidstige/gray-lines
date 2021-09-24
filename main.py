@@ -8,6 +8,7 @@ from tqdm import tqdm
 TAU = 2 * np.pi
 BACKGROUND = 1
 FOREGROUND = 0
+LINE_WIDTH = 0.5
 
 def clone_surface(surface: cairo.ImageSurface) -> cairo.ImageSurface:
     return cairo.ImageSurface.create_for_data(
@@ -30,7 +31,7 @@ def cost(node_pair, accumulator: cairo.ImageSurface, target: np.ndarray) -> floa
     n0, n1 = node_pair
     surface = clone_surface(accumulator)
     ctx = cairo.Context(surface)
-    ctx.set_line_width(2)
+    ctx.set_line_width(LINE_WIDTH)
     ctx.set_operator(cairo.OPERATOR_SOURCE)
     ctx.set_source_rgba(0, 0, 0, FOREGROUND)
     ctx.move_to(*n0)
@@ -66,13 +67,13 @@ def main():
     ctx.rectangle(0, 0, accumulator.get_width(), accumulator.get_height())
     ctx.fill()
 
-    ctx.set_line_width(2)
+    ctx.set_line_width(LINE_WIDTH)
     ctx.set_source_rgba(0, 0, 0, FOREGROUND)
     ctx.set_operator(cairo.OPERATOR_SOURCE)
 
     combinations = list(itertools.combinations(nodes, 2))
 
-    for _ in tqdm(range(100)):
+    for _ in tqdm(range(500)):
         index = np.argmin([cost(node_pair, accumulator, target) for node_pair in combinations])
 
         n0, n1 = combinations[index]
