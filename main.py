@@ -8,7 +8,10 @@ from tqdm import tqdm
 TAU = 2 * np.pi
 BACKGROUND = 1
 FOREGROUND = 0
-LINE_WIDTH = 0.5
+LINE_WIDTH = 0.1
+NODES = 256
+LINES = 4096
+BATCH = 16
 
 def clone_surface(surface: cairo.ImageSurface) -> cairo.ImageSurface:
     return cairo.ImageSurface.create_for_data(
@@ -54,11 +57,11 @@ def size(img: np.ndarray) -> np.ndarray:
 
 
 def main():
-    n = 64
-    target = load_target('skull.jpeg')
+    #target = load_target('skull.jpeg')
+    target = load_target('woman.jpeg')
 
     radius = np.max(size(target))
-    alpha = np.linspace(0, TAU, n, endpoint=False)
+    alpha = np.linspace(0, TAU, NODES, endpoint=False)
     nodes = radius * np.vstack([np.cos(alpha), np.sin(alpha)]).T + 0.5 * size(target)
 
     accumulator = cairo.ImageSurface(cairo.FORMAT_A8, *size(target))
@@ -73,20 +76,16 @@ def main():
 
     combinations = list(itertools.combinations(nodes, 2))
 
-    best = float('inf')
-    for _ in tqdm(range(500)):
+    for _ in tqdm(range(LINES // BATCH)):
         costs = [cost(node_pair, accumulator, target) for node_pair in combinations]
-        index = np.argmin(costs)
-        if costs[index] >= best:
-            print('plateau')
-            break
+        indices = np.argpartition(costs, BATCH)[:BATCH]
 
-        n0, n1 = combinations[index]
-        ctx.move_to(*n0)
-        ctx.line_to(*n1)
-        ctx.stroke()
-
-        del combinations[index]
+        for index in sorted(indices, reverse=True):
+            n0, n1 = combinations[index]
+            ctx.move_to(*n0)
+            ctx.line_to(*n1)
+            ctx.stroke()
+            del combinations[index]
 
     accumulator.write_to_png('output.png')
 
