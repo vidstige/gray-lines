@@ -3,14 +3,15 @@ import itertools
 import cairo
 import numpy as np
 from PIL import Image
-
+from tqdm import tqdm
 
 TAU = 2 * np.pi
-
+BACKGROUND = 1
+FOREGROUND = 0
 
 def clone_surface(surface: cairo.ImageSurface) -> cairo.ImageSurface:
     return cairo.ImageSurface.create_for_data(
-        surface.get_data(),
+        memoryview(bytearray(surface.get_data())),
         surface.get_format(),
         surface.get_width(),
         surface.get_height(),
@@ -25,30 +26,61 @@ def asarray(surface: cairo.ImageSurface) -> np.ndarray:
         buffer=buffer)
 
 
-def cost(diff: np.ndarray) -> float:
+def node_cost(node_pair, accumulator: cairo.ImageSurface, target: np.ndarray) -> float:
+    n0, n1 = node_pair
+    surface = clone_surface(accumulator)
+    ctx = cairo.Context(surface)
+    ctx.set_line_width(2)
+    ctx.set_operator(cairo.OPERATOR_SOURCE)
+    ctx.set_source_rgba(0, 0, 0, FOREGROUND)
+    ctx.move_to(*n0)
+    ctx.line_to(*n1)
+    ctx.stroke()
+    diff = asarray(surface).astype(np.float32) - target
     return np.sum(diff.ravel()**2)
 
 
-def main():
-    n = 6
-    img = Image.open('woman.jpeg')
-    size = np.array([img.width, img.height])
+def load_target(path: str) -> np.ndarray:
+    img = Image.open(path)
     target = np.asarray(img).astype(np.float32)
+    if len(target.shape) == 3:
+        return np.mean(target, axis=-1)
+    return target
 
-    r = np.max(size)
+
+def size(img: np.ndarray) -> np.ndarray:
+    return np.array([img.shape[1], img.shape[0]])
+
+
+def main():
+    n = 64
+    target = load_target('skull.jpeg')
+
+    radius = np.max(size(target))
     alpha = np.linspace(0, TAU, n, endpoint=False)
-    nodes = r * np.vstack([np.cos(alpha), np.sin(alpha)]).T + 0.5 * size
+    nodes = radius * np.vstack([np.cos(alpha), np.sin(alpha)]).T + 0.5 * size(target)
 
-    accumulator = cairo.ImageSurface(cairo.FORMAT_A8, *size)
-    for n0, n1 in itertools.combinations(nodes, 2):
-        surface = clone_surface(accumulator)
-        ctx = cairo.Context(surface)
-        ctx.set_line_width(2)
+    accumulator = cairo.ImageSurface(cairo.FORMAT_A8, *size(target))
+    ctx = cairo.Context(accumulator)
+    ctx.set_source_rgba(1, 1, 1, BACKGROUND)
+    ctx.rectangle(0, 0, accumulator.get_width(), accumulator.get_height())
+    ctx.fill()
+
+    ctx.set_line_width(2)
+    ctx.set_source_rgba(0, 0, 0, FOREGROUND)
+    ctx.set_operator(cairo.OPERATOR_SOURCE)
+
+    combinations = list(itertools.combinations(nodes, 2))
+
+    for _ in tqdm(range(100)):
+        n0, n1 = min(
+            (node_pair for node_pair in combinations),
+            key=lambda node_pair: node_cost(node_pair, accumulator, target))
         ctx.move_to(*n0)
         ctx.line_to(*n1)
         ctx.stroke()
-        diff = asarray(surface).astype(np.float32) - target
-        print(cost(diff))
+
+    accumulator.write_to_png('output.png')
 
 
 if __name__ == "__main__":

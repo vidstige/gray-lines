@@ -1,5 +1,5 @@
 [MASTER]
-good-names=x,y,z,i,j,n,r,n0,n1
+good-names=x,y,z,i,j,n,n0,n1
 
 [TYPECHECK]
 ignored-modules=cairo
