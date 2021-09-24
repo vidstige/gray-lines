@@ -26,7 +26,7 @@ def asarray(surface: cairo.ImageSurface) -> np.ndarray:
         buffer=buffer)
 
 
-def node_cost(node_pair, accumulator: cairo.ImageSurface, target: np.ndarray) -> float:
+def cost(node_pair, accumulator: cairo.ImageSurface, target: np.ndarray) -> float:
     n0, n1 = node_pair
     surface = clone_surface(accumulator)
     ctx = cairo.Context(surface)
@@ -73,12 +73,14 @@ def main():
     combinations = list(itertools.combinations(nodes, 2))
 
     for _ in tqdm(range(100)):
-        n0, n1 = min(
-            (node_pair for node_pair in combinations),
-            key=lambda node_pair: node_cost(node_pair, accumulator, target))
+        index = np.argmin([cost(node_pair, accumulator, target) for node_pair in combinations])
+
+        n0, n1 = combinations[index]
         ctx.move_to(*n0)
         ctx.line_to(*n1)
         ctx.stroke()
+
+        del combinations[index]
 
     accumulator.write_to_png('output.png')
 
